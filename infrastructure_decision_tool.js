@@ -137,11 +137,78 @@ function runSubnetChecker() {
   }
 }
 
-// Part B (Compute Environment Selector) is not built yet - coming in the next commit.
+// ===== PART B START =====
+// ---------------------------------------------------------------------------
+// Part B - Compute Environment Selector
+// ---------------------------------------------------------------------------
+
+// HA or more than 10,000 users -> full architecture takes priority.
+function recommendArchitecture(users, highAvailability) {
+  if (highAvailability || users > 10000) {
+    const reason = highAvailability && users > 10000
+      ? 'High availability was requested and there are more than 10,000 monthly users.'
+      : highAvailability
+        ? 'High availability was requested.'
+        : 'There are more than 10,000 monthly users.';
+    return { name: 'EC2 + Load Balancer + Auto Scaling', needsLoadBalancer: true, needsAutoScaling: true, reason };
+  }
+  if (users >= 1000) {
+    return {
+      name: 'EC2 + Load Balancer',
+      needsLoadBalancer: true,
+      needsAutoScaling: false,
+      reason: 'There are between 1,000 and 10,000 monthly users.',
+    };
+  }
+  return {
+    name: 'Single EC2',
+    needsLoadBalancer: false,
+    needsAutoScaling: false,
+    reason: 'There are fewer than 1,000 monthly users and high availability is not required.',
+  };
+}
+
+function budgetWarnings(budget, architecture) {
+  const warnings = [];
+  if (budget < 1000 && architecture.name !== 'Single EC2') {
+    warnings.push(`WARNING: A budget under $1,000 may not cover "${architecture.name}". ` +
+      'This architecture needs more than a single EC2 instance.');
+  }
+  if (budget >= 1000 && budget <= 3000 && architecture.needsAutoScaling) {
+    warnings.push(`WARNING: A budget of $1,000-$3,000 may not cover Auto Scaling, ` +
+      `which "${architecture.name}" requires.`);
+  }
+  return warnings;
+}
+
 function runComputeSelector() {
   console.log('\n--- Compute Environment Selector ---');
-  console.log('This tool has not been implemented yet.');
+
+  const appName = askNonEmpty('Enter the application name: ');
+  const users = askPositiveInteger('Enter the number of monthly users: ');
+  const budget = askBudget('Enter the monthly budget in dollars: ');
+  const highAvailability = askYesNo('Is high availability required? (yes/no): ');
+
+  const architecture = recommendArchitecture(users, highAvailability);
+  const warnings = budgetWarnings(budget, architecture);
+
+  console.log('\nResults');
+  console.log('-------');
+  console.log(`Application:       ${appName}`);
+  console.log(`Monthly users:     ${users.toLocaleString('en-US')}`);
+  console.log(`Monthly budget:    ${formatMoney(budget)}`);
+  console.log(`High availability: ${highAvailability ? 'Yes' : 'No'}`);
+  console.log(`\nRecommended architecture: ${architecture.name}`);
+  console.log(`Reason: ${architecture.reason}`);
+
+  if (warnings.length === 0) {
+    console.log('\nBudget check: No budget warnings.');
+  } else {
+    console.log('');
+    warnings.forEach((w) => console.log(w));
+  }
 }
+// ===== PART B END =====
 
 // ---------------------------------------------------------------------------
 // Main menu (loops until the user chooses to exit)
