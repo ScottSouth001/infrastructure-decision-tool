@@ -1,0 +1,13 @@
+{
+  "name": "infrastructure-decision-tool",
+  "version": "1.0.0",
+  "description": "INFO 300 programming assignment: Subnet Host Checker and Compute Environment Selector",
+  "main": "infrastructure_decision_tool.js",
+  "scripts": {
+    "start": "node infrastructure_decision_tool.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "readline-sync": "^1.4.10"
+  }
+}
